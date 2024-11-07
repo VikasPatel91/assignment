@@ -1,0 +1,23 @@
+{
+  "name": "cap774",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Vikas Patel",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cap774": "file:",
+    "cors": "^2.8.5",
+    "ejs": "^3.1.10",
+    "exjs": "^1.2.1",
+    "express": "^4.21.1",
+    "method-override": "^3.0.0",
+    "mysql2": "^3.11.4",
+    "uuid": "^11.0.2"
+  }
+}
