@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="container mt-4">
+    <h1>Transaction Dashboard</h1>
+    
+    <!-- Month Selector -->
+    <div class="mb-3">
+        <label for="monthSelect" class="form-label">Select Month</label>
+        <select class="form-select" id="monthSelect">
+            <option value="01" <% if (selectedMonth === '01') { %>selected<% } %>>January</option>
+            <option value="02" <% if (selectedMonth === '02') { %>selected<% } %>>February</option>
+            <option value="03" <% if (selectedMonth === '03') { %>selected<% } %>>March</option>
+            <option value="04" <% if (selectedMonth === '04') { %>selected<% } %>>April</option>
+            <option value="05" <% if (selectedMonth === '05') { %>selected<% } %>>May</option>
+            <option value="06" <% if (selectedMonth === '06') { %>selected<% } %>>June</option>
+            <option value="07" <% if (selectedMonth === '07') { %>selected<% } %>>July</option>
+            <option value="08" <% if (selectedMonth === '08') { %>selected<% } %>>August</option>
+            <option value="09" <% if (selectedMonth === '09') { %>selected<% } %>>September</option>
+            <option value="10" <% if (selectedMonth === '10') { %>selected<% } %>>October</option>
+            <option value="11" <% if (selectedMonth === '11') { %>selected<% } %>>November</option>
+            <option value="12" <% if (selectedMonth === '12') { %>selected<% } %>>December</option>
+        </select>
+    </div>
+    
+    <!-- Search Box -->
+    <div class="mb-3">
+        <input type="text" id="searchBox" class="form-control" placeholder="Search transactions by title, description, or price">
+    </div>
+
+    <!-- Transactions Table -->
+    <table class="table table-bordered" id="transactionsTable">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Date of Sale</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% transactions.forEach(function(transaction) { %>
+              <tr>
+                <td><%= transaction.title %></td>
+                <td><%= transaction.description %></td>
+                <td><%= transaction.price %></td>
+                <td><%= transaction.category %></td>
+                <td><%= transaction.status %></td>
+                <td><%= transaction.dateOfSale %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          
+    </table>
+    
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-between">
+        <button id="prevPage" class="btn btn-primary">Previous</button>
+        <button id="nextPage" class="btn btn-primary">Next</button>
+    </div>
+
+    <!-- Transaction Statistics -->
+    <div class="mt-4">
+        <h3>Statistics for <span id="statisticsMonth"><%= selectedMonth %></span>:</h3>
+        <ul>
+            <li>Total Sales: $<span id="totalSales">0</span></li>
+            <li>Total Sold Items: <span id="soldItems">0</span></li>
+            <li>Total Not Sold Items: <span id="notSoldItems">0</span></li>
+        </ul>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="mt-4">
+        <h3>Price Range Distribution</h3>
+        <canvas id="barChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="mt-4">
+        <h3>Category Distribution</h3>
+        <canvas id="pieChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // Fetch data from APIs and update the page
+    const selectedMonth = '<%= selectedMonth %>';
+    let currentPage = 1;
+    let perPage = 10;
+
+    // Function to fetch transactions data
+    function fetchTransactions() {
+        const month = document.getElementById('monthSelect').value;
+        const search = document.getElementById('searchBox').value;
+        $.get(`/transactions?month=${month}&search=${search}&page=${currentPage}&perPage=${perPage}`, function(data) {
+            const tableBody = $('#transactionsTable tbody');
+            tableBody.empty();
+            data.forEach(function(transaction) {
+                tableBody.append(`
+                    <tr>
+                        <td>${transaction.title}</td>
+                        <td>${transaction.description}</td>
+                        <td>${transaction.price}</td>
+                        <td>${transaction.category}</td>
+                        <td>${transaction.status}</td>
+                        <td>${transaction.dateOfSale}</td>
+                    </tr>
+                `);
+            });
+        });
+    }
+
+    // Function to fetch statistics data
+    function fetchStatistics() {
+        const month = document.getElementById('monthSelect').value;
+        $.get(`/statistics?month=${month}`, function(data) {
+            $('#totalSales').text(data.totalSales);
+            $('#soldItems').text(data.soldItems);
+            $('#notSoldItems').text(data.notSoldItems);
+        });
+    }
+
+    // Function to fetch bar chart data
+    function fetchBarChartData() {
+        const month = document.getElementById('monthSelect').value;
+        $.get(`/bar-chart?month=${month}`, function(data) {
+            const labels = data.map(item => item.priceRange);
+            const values = data.map(item => item.itemCount);
+
+            const ctx = document.getElementById('barChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Items in Price Range',
+                        data: values,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                }
+            });
+        });
+    }
+
+    // Function to fetch pie chart data
+    function fetchPieChartData() {
+        const month = document.getElementById('monthSelect').value;
+        $.get(`/pie-chart?month=${month}`, function(data) {
+            const labels = data.map(item => item.categoryName);
+            const values = data.map(item => item.itemCount);
+
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Items by Category',
+                        data: values,
+                        backgroundColor: ['#FF5733', '#33FF57', '#3357FF', '#FF33A1', '#F1C40F'],
+                        borderColor: 'white',
+                        borderWidth: 2
+                    }]
+                }
+            });
+        });
+    }
+
+    // Event listener for month selection change
+    $('#monthSelect').on('change', function() {
+        fetchTransactions();
+        fetchStatistics();
+        fetchBarChartData();
+        fetchPieChartData();
+    });
+
+    // Event listener for search box input
+    $('#searchBox').on('input', function() {
+        fetchTransactions();
+    });
+
+    // Pagination button actions
+    $('#nextPage').on('click', function() {
+        currentPage++;
+        fetchTransactions();
+    });
+
+    $('#prevPage').on('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchTransactions();
+        }
+    });
+
+    // Initial data fetch
+    fetchTransactions();
+    fetchStatistics();
+    fetchBarChartData();
+    fetchPieChartData();
+</script>
+
+</body>
+</html>
